@@ -6,6 +6,20 @@ set -eo pipefail
 BUILD_DIR=$1
 PYTHON_EXE=$BUILD_DIR/.heroku/python/bin/python
 
+script="
+from django.contrib.auth.models import User;
+
+username = '$SUPERUSER';
+password = '$SUPERPASS';
+email = '$SUPERMAIL';
+
+if User.objects.filter(username=username).count()==0:
+    User.objects.create_superuser(username, email, password);
+    print('Superuser created.');
+else:
+    print('Superuser creation skipped.');
+"
+
 # copied from Heroku python buildpack
 sub-env() {
 
@@ -28,3 +42,4 @@ sub-env() {
 
 echo "-----> Running Django migrations"
 sub-env $PYTHON_EXE $BUILD_DIR/manage.py migrate
+sub-env printf "$script" | $PYTHON_EXE $BUILD_DIR/manage.py shell
